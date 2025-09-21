@@ -1,17 +1,17 @@
-from flask import Flask, request, render_template_string
+from flask import Flask, request, jsonify
 import requests
 from bs4 import BeautifulSoup
 
 app = Flask(__name__)
 
+# Sites to index
 urls = [
     "https://www.python.org",
     "https://www.wikipedia.org",
-    "https://www.mozilla.org",
-    "https://www.gnu.org",
-    "https://kernel.org"
+    "https://www.mozilla.org"
 ]
 
+# Build a simple index
 index = {}
 titles = {}
 
@@ -31,37 +31,14 @@ def search(query):
     results = set()
     for word in words:
         results |= index.get(word, set())
-    return list(results)
+    # Return list of dicts for JSON
+    return [{"title": titles[r], "url": r} for r in results]
 
-HTML = """
-<!DOCTYPE html>
-<html>
-<head>
-  <title>Searchoor - {{q}}</title>
-</head>
-<body>
-  <h1>🔍 Searchoor</h1>
-  <form action="/" method="get">
-    <input type="text" name="q" value="{{q}}" placeholder="Search...">
-    <button type="submit">Search</button>
-  </form>
-  {% if results %}
-    <h2>Results</h2>
-    <ul>
-      {% for r in results %}
-        <li><a href="{{r}}" target="_blank">{{titles[r]}}</a></li>
-      {% endfor %}
-    </ul>
-  {% endif %}
-</body>
-</html>
-"""
-
-@app.route("/", methods=["GET"])
-def home():
+@app.route("/search")
+def search_api():
     q = request.args.get("q", "")
     results = search(q) if q else []
-    return render_template_string(HTML, q=q, results=results, titles=titles)
+    return jsonify(results)
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)
